@@ -6,6 +6,20 @@ router.get('/', function(req, res, next) {
   res.render('index', { title: 'Express' });
 });
 
+router.get('/hi', (req, res, next) => {
+  try {
+    const tenantLogonName = req.authInfo.getLogonName();
+    const tenantSubdomain = req.authInfo.getSubdomain();
+    const tenantZoneId = req.authInfo.getZoneId();
+    const response = `Hi ${tenantLogonName}, your tenant sub-domain is "${tenantSubdomain}", zone is "${tenantZoneId}"`
+    res.send(response);
+  } catch (e) {
+    const message = 'No tenant information found!';
+    console.log(message);
+    res.send(message);
+  }
+});
+
 //******************************** API Callbacks for multitenancy ********************************
 /**
  * Request Method Type - PUT
