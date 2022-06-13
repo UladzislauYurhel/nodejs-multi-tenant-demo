@@ -1,0 +1,86 @@
+ID: btp-nodejs-multi-tenant-application
+_schema-version: 3.1.0
+version: 0.0.1
+
+modules:
+  - name: nodeapp
+    type: nodejs
+    path: .
+    parameters:
+      disk-quota: 256M
+      memory: 256M
+    provides:
+      - name: dest_multi_tenant_app
+        properties:
+          node_app_url: '${default-url}'
+    requires:
+      - name: uaa
+      - name: saas-registry
+
+  - name: approuter
+    type: nodejs
+    path: approuter
+    parameters:
+      disk-quota: 256M
+      memory: 256M
+      keep-existing:
+        routes: true
+    provides:
+      - name: router-api
+        properties:
+          url: ${default-url}
+          application: ${app-name}
+    requires:
+      - name: dest_multi_tenant_app
+        group: destinations
+        properties:
+          name: dest_multi_tenant_app
+          url: ~{node_app_url}
+          forwardAuthToken: true
+      - name: uaa
+    properties:
+      TENANT_HOST_PATTERN: "^(.*)-dev-nodeapp.${default-domain}"
+
+resources:
+  - name: uaa
+    type: org.cloudfoundry.managed-service
+    requires:
+      - name: router-api
+    properties:
+      XSAPPNAME: ${xsuaa-app}
+    parameters:
+      service-plan: application
+      service: xsuaa
+      shared: true
+      xsuaa-app: ${space}-~{router-api/application}
+      config:
+        xsappname: ${xsuaa-app}
+        tenant-mode: shared
+        description: Security profile of called application
+        scopes:
+          - name: "$XSAPPNAME.Callback"
+            description: With this scope set, the callbacks for tenant onboarding, offboarding and getDependencies can be called.
+            grant-as-authority-to-apps:
+              - "$XSAPPNAME(application,sap-provisioning,tenant-onboarding)"
+        oauth2-configuration:
+          redirect-uris:
+            - "http*://*.${default-domain}/**"
+
+  - name: saas-registry
+    type: org.cloudfoundry.managed-service
+    requires:
+      - name: uaa
+      - name: dest_multi_tenant_app
+    parameters:
+      service: saas-registry
+      service-plan: application
+      config:
+        xsappname: ~{uaa/XSAPPNAME}
+        appName: btp-nodejs-multi-tenant-application
+        displayName: Multitenancy Sample in Cloud Foundry
+        description: 'A NodeJS application to show how to use the SaaS registry to build a multi-tenant application on BTP Cloud Foundry Runtime'
+        category: 'Provider: TIA'
+        appUrls:
+          onSubscription: ~{dest_multi_tenant_app/node_app_url}/callback/v1.0/tenants/{tenantId}
+          onSubscriptionAsync: false
+          onUnSubscriptionAsync: false

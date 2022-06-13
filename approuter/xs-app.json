@@ -1,0 +1,11 @@
+{
+  "authenticationMethod": "route",
+  "routes": [
+    {
+      "source": "/",
+      "target": "/",
+      "destination": "dest_multi_tenant_app",
+      "authenticationType": "xsuaa"
+    }
+  ]
+}

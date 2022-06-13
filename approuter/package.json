@@ -1,0 +1,10 @@
+{
+  "name": "approuter",
+  "dependencies": {
+    "@sap/approuter": "^8",
+    "@sap/xsenv": "^3"
+  },
+  "scripts": {
+    "start": "node node_modules/@sap/approuter/approuter.js"
+  }
+}
